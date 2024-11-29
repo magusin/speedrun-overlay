@@ -11,12 +11,14 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
   const [selectedVariable, setSelectedVariable] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   console.log('subCategories:', subCategories);
   console.log('leaderboard:', leaderboard);
 
-  const LEADERBOARD_PAGE_SIZE = 8; // Nombre d'entrées par page
-  const PAGE_SWITCH_INTERVAL = 5000; // Temps en millisecondes pour changer de page
+  const LEADERBOARD_PAGE_SIZE = 5; // Nombre d'entrées par page
+  const PAGE_SWITCH_INTERVAL = 9000; // Temps en millisecondes pour changer de page
+  const TRANSITION_DURATION = 500; // Durée de la transition visuelle
 
   useEffect(() => {
     axios.get('/api/games')
@@ -35,23 +37,12 @@ export default function Home() {
       .then((res) => {
         setLeaderboard(res.data);
         setCurrentPage(0); // Reset pagination
-        startLeaderboardRotation(res.data.length); // Start rotation if applicable
+        // startLeaderboardRotation(res.data.length); // Start rotation if applicable
       })
       .catch((err) => {
         console.error(err);
         setLeaderboard([]); // Empty leaderboard on error
       });
-  };
-
-  const startLeaderboardRotation = (totalEntries) => {
-    if (intervalId) clearInterval(intervalId); // Clear previous interval
-    if (!totalEntries || totalEntries <= LEADERBOARD_PAGE_SIZE) return; // Skip if not enough data
-
-    const id = setInterval(() => {
-      setCurrentPage((prevPage) => (prevPage + 1) % Math.ceil(totalEntries / LEADERBOARD_PAGE_SIZE));
-    }, PAGE_SWITCH_INTERVAL);
-
-    setIntervalId(id);
   };
 
   const stopLeaderboardRotation = () => {
@@ -112,9 +103,31 @@ export default function Home() {
     setCurrentPage(0);
   };
 
+  useEffect(() => {
+    if (leaderboard?.length > 8) {
+      const interval = setInterval(() => {
+        triggerPageChange();
+      }, PAGE_SWITCH_INTERVAL + TRANSITION_DURATION);
+      return () => clearInterval(interval);
+    }
+  }, [leaderboard]);
+
+  const triggerPageChange = () => {
+    if (isTransitioning || leaderboard.length <= 8) return; // Pas de pagination nécessaire
+
+    setIsTransitioning(true); // Commence la transition
+    setTimeout(() => {
+      setCurrentPage((prevPage) =>
+        (prevPage + 1) % Math.ceil((leaderboard.length - 3) / LEADERBOARD_PAGE_SIZE)
+      );
+      setIsTransitioning(false); // Termine la transition
+    }, TRANSITION_DURATION); // Synchronisé avec la durée de transition
+  };
+
   const formatTime = (time) => {
     // Formater le temps en h:mm:ss ou mm:ss si h === 0
     const parts = time.split(':');
+    console.log('parts:', parts);
     return parts[0] === '00' ? parts.slice(1).join(':') : time;
   };
 
@@ -128,8 +141,8 @@ export default function Home() {
 
   const paginatedLeaderboard = leaderboard
     ? leaderboard.slice(
-      currentPage * LEADERBOARD_PAGE_SIZE,
-      (currentPage + 1) * LEADERBOARD_PAGE_SIZE
+      3+ currentPage * LEADERBOARD_PAGE_SIZE,
+      3+ (currentPage + 1) * LEADERBOARD_PAGE_SIZE
     )
     : [];
 
@@ -138,13 +151,13 @@ export default function Home() {
       {/* Étape 1 : Afficher la liste des jeux si aucun jeu n'est sélectionné */}
       {!selectedGame && games && (
         <div>
-          <h2 className="text-2xl font-bold mb-4">Select a Game</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-400">Select a Game</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {games.data.map((game) => (
               <div
                 key={game.id}
                 onClick={() => handleGameClick(game)}
-                className="border rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow duration-300"
+                className="border rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow duration-300 bg-white"
               >
                 <img
                   src={game.assets['background']?.uri || '/placeholder.png'}
@@ -171,7 +184,7 @@ export default function Home() {
           >
             Back to Games
           </button>
-          <div className="max-w-md mx-auto border rounded-lg shadow-lg p-4">
+          <div className="max-w-md mx-auto border rounded-lg shadow-lg p-4 bg-white">
             <img
               src={selectedGame.assets['background']?.uri || '/placeholder.png'}
               alt={selectedGame.names.international}
@@ -184,13 +197,13 @@ export default function Home() {
               Released: {selectedGame.released || 'Unknown'}
             </p>
           </div>
-          <h2 className="text-2xl font-bold mb-4">Select a Category</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-400">Select a Category</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories.map((category) => (
               <div
                 key={category.id}
                 onClick={() => handleCategoryClick(category)}
-                className="border rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow duration-300 p-4"
+                className="border rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow duration-300 p-4 bg-white"
               >
                 <h3 className="text-lg font-semibold text-center">{category.name}</h3>
               </div>
@@ -208,13 +221,25 @@ export default function Home() {
           >
             Back to Categories
           </button>
-          <h2 className="text-2xl font-bold mb-4">{subCategories[0]?.name || 'Subcategories'}</h2>
+          <div className="max-w-md mx-auto border rounded-lg shadow-lg p-4 bg-white mb-4">
+            <img
+              src={selectedGame.assets['background']?.uri || '/placeholder.png'}
+              alt={selectedGame.names.international}
+              className="w-full h-60 object-cover rounded-lg"
+            />
+            <h2 className="text-2xl font-bold text-center mt-4">
+              {selectedGame.names.international}
+            </h2>
+            <p className="text-center mt-2">
+              {selectedCategory.name}
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {subCategories[0]?.options.map((option) => (
               <div
                 key={option.id}
                 onClick={() => handleSubCategoryClick(option)}
-                className="border rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow duration-300 p-4"
+                className="border rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow duration-300 p-4 bg-white"
               >
                 <h3 className="text-lg font-semibold text-center">{option.label}</h3>
               </div>
@@ -226,16 +251,16 @@ export default function Home() {
       {/* Étape 4 : Afficher le leaderboard si tout est sélectionné */}
       {leaderboard && leaderboard.length > 0 && (
         <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center">
-          <div className="bg-transparent w-[500px] min-h-[400px] flex flex-col ">
-            {/* Top 3 : Fixes */}
+          <div className="w-[300px] min-h-[400px] flex flex-col">
+            {/* Les 3 premiers (fixes) */}
             <div className="text-center">
               {leaderboard.slice(0, 3).map((entry, index) => (
                 <div
                   key={entry.rank}
-                  className="flex justify-between items-center mb-1 p-1"
+                  className="flex justify-between items-center mb-2"
                 >
                   <div className="flex items-center">
-                    {/* Trophée selon le rang */}
+                    {/* Icônes de trophée */}
                     {index === 0 && (
                       <img
                         src="https://www.speedrun.com/images/1st.png"
@@ -257,7 +282,7 @@ export default function Home() {
                         className="w-6 h-6 mr-1"
                       />
                     )}
-                    {/* Pays et nom */}
+                    {/* Pays et nom du joueur */}
                     {entry.country ? (
                       <img
                         src={`https://flagcdn.com/w40/${entry.country.toLowerCase()}.png`}
@@ -274,33 +299,38 @@ export default function Home() {
                     <span
                       style={{
                         background:
-                          entry.style?.style === 'gradient'
-                            ? `linear-gradient(to right, ${entry.style['color-from'].light}, ${entry.style['color-to'].light})`
-                            : 'none',
-                        color: entry.style?.style === 'solid' ? entry.style.color.light : 'inherit',
+                          entry.style?.style === "gradient"
+                            ? `linear-gradient(to right, ${entry.style["color-from"].dark}, ${entry.style["color-to"].dark})`
+                            : "none",
+                        color:
+                          entry.style?.style === "solid" ? entry.style.color.dark : "inherit",
                         WebkitBackgroundClip:
-                          entry.style?.style === 'gradient' ? 'text' : 'unset',
+                          entry.style?.style === "gradient" ? "text" : "unset",
                         WebkitTextFillColor:
-                          entry.style?.style === 'gradient' ? 'transparent' : 'unset',
+                          entry.style?.style === "gradient" ? "transparent" : "unset",
                       }}
                       className="text-lg font-bold"
                     >
                       {entry.player}
                     </span>
                   </div>
-                  <div className="text-lg font-semibold ml-2">
+                  <div className="text-lg font-semibold ml-2 text-white">
                     {formatTime(entry.time)}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Pagination pour les rangs suivants */}
-            <div className="bg-transparent">
-              {paginatedLeaderboard.slice(3).map((entry, index) => (
+            {/* Les 5 suivants (pagination) */}
+            <div
+              className={`transition-opacity duration-500 ${
+                isTransitioning ? "opacity-0" : "opacity-100"
+              }`}
+            >
+              {paginatedLeaderboard.map((entry) => (
                 <div
                   key={entry.rank}
-                  className="flex justify-between items-center mb-1 p-1"
+                  className="flex justify-between items-center p-1 text-white"
                 >
                   <div className="flex items-center">
                     <span className="text-md font-bold w-6 text-center">
@@ -308,13 +338,13 @@ export default function Home() {
                     </span>
                     {entry.country ? (
                       <img
-                        src={`https://flagcdn.com/w40/${entry.country.toLowerCase()}.png`}
+                        src={`https://www.speedrun.com/images/flags/${entry.country.toLowerCase()}.png`}
                         alt={entry.country}
                         className="inline-block w-6 h-4 mx-1"
                       />
                     ) : (
                       <img
-                        src={`https://flagcdn.com/w40/us.png`}
+                        src={`https://www.speedrun.com/images/flags/us.png`}
                         alt="Default"
                         className="inline-block w-6 h-4 mx-1"
                       />
@@ -322,21 +352,22 @@ export default function Home() {
                     <span
                       style={{
                         background:
-                          entry.style?.style === 'gradient'
-                            ? `linear-gradient(to right, ${entry.style['color-from'].light}, ${entry.style['color-to'].light})`
-                            : 'none',
-                        color: entry.style?.style === 'solid' ? entry.style.color.light : 'inherit',
+                          entry.style?.style === "gradient"
+                            ? `linear-gradient(to right, ${entry.style["color-from"].dark}, ${entry.style["color-to"].dark})`
+                            : "none",
+                        color:
+                          entry.style?.style === "solid" ? entry.style.color.dark : "inherit",
                         WebkitBackgroundClip:
-                          entry.style?.style === 'gradient' ? 'text' : 'unset',
+                          entry.style?.style === "gradient" ? "text" : "unset",
                         WebkitTextFillColor:
-                          entry.style?.style === 'gradient' ? 'transparent' : 'unset',
+                          entry.style?.style === "gradient" ? "transparent" : "unset",
                       }}
                       className="text-md font-medium"
                     >
                       {entry.player}
                     </span>
                   </div>
-                  <div className="text-md ml-2">{formatTime(entry.time)}</div>
+                  <div className="text-md ml-2 text-white">{formatTime(entry.time)}</div>
                 </div>
               ))}
             </div>
