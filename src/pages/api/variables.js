@@ -14,7 +14,6 @@ export default async function handler(req, res) {
     );
 
     const variables = response.data?.data;
-    console.log('variables', variables);
 
     // Filtrer uniquement les variables "sub-catégories"
     const subcategories = variables.filter((variable) => variable['is-subcategory']);

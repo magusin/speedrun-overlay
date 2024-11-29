@@ -13,9 +13,6 @@ export default function Home() {
   const [selectedVariable, setSelectedVariable] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  console.log('subCategories:', subCategories);
-  console.log('leaderboard:', leaderboard);
-
   const LEADERBOARD_PAGE_SIZE = 5; // Nombre d'entrées par page
   const PAGE_SWITCH_INTERVAL = 9000; // Temps en millisecondes pour changer de page
   const TRANSITION_DURATION = 500; // Durée de la transition visuelle
@@ -62,14 +59,12 @@ export default function Home() {
   };
 
   const handleCategoryClick = (category) => {
-    console.log('category:', category);
     setSelectedCategory(category);
     setSubCategories(null);
     setLeaderboard(null);
     axios
       .get(`/api/variables?categoryId=${category.id}`)
       .then((res) => {
-        console.log('variables:', res.data);
         if (res.data.length > 0) {
           setSelectedVariable(res.data[0].id);
           setSubCategories(res.data);
@@ -127,7 +122,6 @@ export default function Home() {
   const formatTime = (time) => {
     // Formater le temps en h:mm:ss ou mm:ss si h === 0
     const parts = time.split(':');
-    console.log('parts:', parts);
     return parts[0] === '00' ? parts.slice(1).join(':') : time;
   };
 
