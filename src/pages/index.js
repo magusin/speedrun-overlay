@@ -120,9 +120,16 @@ export default function Home() {
   };
 
   const formatTime = (time) => {
-    // Formater le temps en h:mm:ss ou mm:ss si h === 0
+    // Diviser le temps en parties (heures, minutes, secondes)
     const parts = time.split(':');
-    return parts[0] === '00' ? parts.slice(1).join(':') : time;
+    if (parts[0] === '00') {
+      // Si les heures sont '00', ne pas les afficher
+      return parts.slice(1).join(':');
+    } else {
+      // Si les heures commencent par '0', les supprimer
+      parts[0] = parts[0].replace(/^0/, '');
+      return parts.join(':');
+    }
   };
 
   if (!games) {
@@ -244,7 +251,7 @@ export default function Home() {
 
       {/* Étape 4 : Afficher le leaderboard si tout est sélectionné */}
       {leaderboard && leaderboard.length > 0 && (
-        <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center">
+        <div className="bg-black absolute top-0 left-0 w-full h-full flex justify-center items-center">
           <div className="w-[300px] min-h-[400px] flex flex-col">
             {/* Les 3 premiers (fixes) */}
             <div className="text-center">
@@ -324,10 +331,10 @@ export default function Home() {
               {paginatedLeaderboard.map((entry) => (
                 <div
                   key={entry.rank}
-                  className="flex justify-between items-center p-1 text-white"
+                  className="flex justify-between items-center mb-2 text-white"
                 >
                   <div className="flex items-center">
-                    <span className="text-md font-bold w-6 text-center">
+                    <span className="text-md font-bold w-6 mr-1 text-center">
                       {entry.rank}
                     </span>
                     {entry.country ? (
@@ -356,12 +363,12 @@ export default function Home() {
                         WebkitTextFillColor:
                           entry.style?.style === "gradient" ? "transparent" : "unset",
                       }}
-                      className="text-md font-medium"
+                      className="text-lg font-bold"
                     >
                       {entry.player}
                     </span>
                   </div>
-                  <div className="text-md ml-2 text-white">{formatTime(entry.time)}</div>
+                  <div className="text-lg font-semibold ml-2 text-white">{formatTime(entry.time)}</div>
                 </div>
               ))}
             </div>
