@@ -15,6 +15,7 @@ export default function Home() {
 
   console.log('selectedGame', selectedGame);
   console.log('selectedCategory', selectedCategory);
+  console.log('subCategories', subCategories);
 
   const LEADERBOARD_PAGE_SIZE = 5; // Nombre d'entrées par page
   const PAGE_SWITCH_INTERVAL = 9000; // Temps en millisecondes pour changer de page
@@ -69,8 +70,14 @@ export default function Home() {
       .get(`/api/variables?categoryId=${category.id}`)
       .then((res) => {
         if (res.data.length > 0) {
+          if (selectedGame.id == "lde3woe6") {
+            console.log(res.data[1]);
+            setSelectedVariable(res.data[1].id);
+            setSubCategories(res.data[1]);
+          } else {
           setSelectedVariable(res.data[0].id);
-          setSubCategories(res.data);
+          setSubCategories(res.data[0]);
+          } 
         } else {
           fetchLeaderboard(selectedGame.id, category.id);
         }
@@ -217,7 +224,7 @@ export default function Home() {
       )}
 
       {/* Étape 3 : Afficher les sous-catégories si une catégorie est sélectionnée mais pas de leaderboard */}
-      {selectedCategory && subCategories && subCategories.length > 0 && subCategories[0]?.options && !leaderboard && (
+      {selectedCategory && subCategories && subCategories?.options && !leaderboard && (
         <div>
           <button
             onClick={handleBackToCategories}
@@ -239,7 +246,7 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subCategories[0]?.options.map((option) => (
+            {subCategories.options.map((option) => (
               <div
                 key={option.id}
                 onClick={() => handleSubCategoryClick(option)}
