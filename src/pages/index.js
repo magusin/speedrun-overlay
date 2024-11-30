@@ -12,6 +12,9 @@ export default function Home() {
   const [intervalId, setIntervalId] = useState(null);
   const [selectedVariable, setSelectedVariable] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [selectedValue, setSelectedValue] = useState(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
 
   console.log('selectedGame', selectedGame);
   console.log('selectedCategory', selectedCategory);
@@ -22,10 +25,62 @@ export default function Home() {
   const TRANSITION_DURATION = 500; // Durée de la transition visuelle
 
   useEffect(() => {
+    const savedGame = localStorage.getItem("selectedGameId");
+    const savedCategory = localStorage.getItem("selectedCategoryId");
+    const savedVariable = localStorage.getItem("selectedVariableId");
+    const savedValue = localStorage.getItem("selectedValueId");
     axios.get('/api/games')
       .then((res) => setGames(res.data))
       .catch((err) => console.error(err));
+
+     // Load saved state
+     if (savedGame && savedCategory && savedVariable && savedValue) {
+      setSelectedGame(savedGame);
+      setSelectedCategory(savedCategory);
+      setSelectedVariable(savedVariable);
+      setSelectedValue(savedValue);
+      // Fetch leaderboard with saved state
+      fetchLeaderboard(
+        savedGame,
+        savedCategory,
+        savedVariable,
+        savedValue
+      );
+      setIsSaved(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (leaderboard) {
+      setShowOverlay(true); // Show overlay when leaderboard appears
+      const timer = setTimeout(() => setShowOverlay(false), 5000); // Hide after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [leaderboard]);
+
+  const handleSaveState = () => {
+    localStorage.setItem("selectedGameId", selectedGame.id);
+    localStorage.setItem("selectedCategoryId", selectedCategory.id);
+    localStorage.setItem("selectedVariableId", selectedVariable);
+    localStorage.setItem("selectedValueId", selectedValue);
+    setIsSaved(true);
+  }
+
+  const handleClearState = () => {
+    localStorage.removeItem("selectedGameId");
+    localStorage.removeItem("selectedCategoryId");
+    localStorage.removeItem("selectedVariableId");
+    localStorage.removeItem("selectedValueId");
+    setIsSaved(false);
+  };
+
+  const handleCheckboxChange = () => {
+    if (isSaved) {
+      handleClearState();
+    } else {
+      handleSaveState();
+    }
+  };
 
   const fetchLeaderboard = (gameId, categoryId, selectedVariable, valueId = null) => {
     let url = `/api/leaderboard?gameId=${gameId}&categoryId=${categoryId}`;
@@ -87,6 +142,7 @@ export default function Home() {
 
   const handleSubCategoryClick = (value) => {
     if (!selectedVariable) return;
+    setSelectedValue(value.id);
     fetchLeaderboard(selectedGame.id, selectedCategory.id, selectedVariable, value.id);
   };
 
@@ -261,8 +317,24 @@ export default function Home() {
 
       {/* Étape 4 : Afficher le leaderboard si tout est sélectionné */}
       {leaderboard && leaderboard.length > 0 && (
-        <div className="bg-black absolute top-0 left-0 w-full h-full flex justify-center items-center">
+        <div className={`absolute top-0 left-0 w-full h-full flex justify-center items-center transition-opacity duration-500 ${
+          showOverlay ? "bg-black" : "bg-transparent"
+        }`}>
           <div className="w-[300px] min-h-[400px] flex flex-col">
+          {showOverlay && (
+              <div className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  id="save-leaderboard"
+                  checked={isSaved}
+                  onChange={handleCheckboxChange}
+                  className="mr-2"
+                />
+                <label htmlFor="save-leaderboard" className="text-white">
+                  Save leaderboard state
+                </label>
+              </div>
+            )}
             {/* Les 3 premiers (fixes) */}
             <div className="text-center">
               {leaderboard.slice(0, 3).map((entry, index) => (
@@ -388,7 +460,7 @@ export default function Home() {
 
       {/* Étape finale : Chargement ou pas de données */}
       {!games && <p>Loading...</p>}
-      {selectedGame && !categories && <p>Loading categories...</p>}
+      {selectedGame && !categories && !leaderboard && <p>Loading categories...</p>}
       {selectedCategory && !subCategories && !leaderboard && <p>Loading subcategories...</p>}
       {leaderboard && leaderboard.length === 0 && <p>No leaderboard data available.</p>}
     </>
