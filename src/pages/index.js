@@ -13,6 +13,9 @@ export default function Home() {
   const [selectedVariable, setSelectedVariable] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  console.log('selectedGame', selectedGame);
+  console.log('selectedCategory', selectedCategory);
+
   const LEADERBOARD_PAGE_SIZE = 5; // Nombre d'entrées par page
   const PAGE_SWITCH_INTERVAL = 9000; // Temps en millisecondes pour changer de page
   const TRANSITION_DURATION = 500; // Durée de la transition visuelle
@@ -286,13 +289,13 @@ export default function Home() {
                     {/* Pays et nom du joueur */}
                     {entry.country ? (
                       <img
-                        src={`https://flagcdn.com/w40/${entry.country.toLowerCase()}.png`}
+                        src={`https://www.speedrun.com/images/flags/${entry.country.toLowerCase()}.png`}
                         alt={entry.country}
                         className="inline-block w-6 h-4 mx-1"
                       />
                     ) : (
                       <img
-                        src={`https://flagcdn.com/w40/us.png`}
+                        src={`https://www.speedrun.com/images/flags/us.png`}
                         alt="Default"
                         className="inline-block w-6 h-4 mx-1"
                       />

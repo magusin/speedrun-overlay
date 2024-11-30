@@ -7,6 +7,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Game ID and Category ID are required.' });
   }
 
+  console.log('gameId', gameId, 'categoryId', categoryId, 'variableId', variableId, 'valueId', valueId)
+
   try {
     let url = `https://www.speedrun.com/api/v1/leaderboards/${gameId}/category/${categoryId}`;
     if (variableId && valueId) {
@@ -17,11 +19,14 @@ export default async function handler(req, res) {
 
     const runs = response.data.data.runs;
 
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     // Récupération des informations des joueurs
     const playerDetails = await Promise.all(
         runs.map(async (run) => {
           const player = run.run.players[0];
           if (player.rel === 'user') {
+            await delay(200); // Limite de 5 requêtes par seconde pour l'API speedrun.com
             const playerResponse = await axios.get(player.uri);
             return {
               id: player.id,
@@ -48,8 +53,6 @@ export default async function handler(req, res) {
         country: playerDetails[index].country,
         time: new Date(run.run.times.primary_t * 1000).toISOString().substr(11, 8)
       }));
-
-      console.log('leaderboard:', leaderboard);
 
     res.status(200).json(leaderboard);
   } catch (error) {
